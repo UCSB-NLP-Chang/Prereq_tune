@@ -1,0 +1,68 @@
+# Model arguments
+model_name_or_path: meta-llama/Meta-Llama-3-8B
+torch_dtype: bfloat16
+attn_implementation: flash_attention_2
+
+# Data training arguments
+chat_template: "{% set loop_messages = messages %}{% for message in loop_messages %}{% if loop.index0 == 0 %}{{ bos_token + 'Question: ' + message['content'] + '\n' }}{% endif %}{% if loop.index0 == 1 %}{{ 'Answer: ' + message['content'] + eos_token }}{% endif %}{% endfor %}{% if add_generation_prompt %}{{ 'Answer:' }}{% endif %}"
+dataset_mixer:
+  Shiyu-Lab/Prereq_Tune: 1.0
+dataset_configs:
+  - popqa_skill
+dataset_splits:
+  - train
+preprocessing_num_workers: 12
+packing: false
+response_template: "Answer:"
+dataset_kwargs:
+  add_special_tokens: false  # We already wrap bos_token and eos_token in the chat template
+
+# LoRA arguments
+use_peft: true
+lora_r: 32
+lora_alpha: 64
+lora_dropout: 0.05
+lora_target_modules:
+- q_proj
+- k_proj
+- v_proj
+- o_proj
+- gate_proj
+- up_proj
+- down_proj
+
+# Prereq-Tune arguments
+mix_lora_training: true
+alternate_cpt_group: true
+real_weight: 0.5
+
+# SFT trainer config
+dataloader_num_workers: 2
+bf16: true
+do_train: true
+do_eval: false
+evaluation_strategy: "no"
+save_strategy: "no"
+gradient_accumulation_steps: 2
+gradient_checkpointing: false
+gradient_checkpointing_kwargs:
+  use_reentrant: False
+learning_rate: 5.0e-05
+weight_decay: 0.01
+log_level: info
+logging_steps: 10
+logging_strategy: steps
+lr_scheduler_type: cosine
+max_seq_length: 64
+max_steps: -1
+num_train_epochs: 3
+overwrite_output_dir: true
+per_device_train_batch_size: 32
+push_to_hub: false
+remove_unused_columns: false
+output_dir: data
+run_name: llama3_popqa_sft
+report_to:
+- wandb
+seed: 42
+warmup_ratio: 0.1
